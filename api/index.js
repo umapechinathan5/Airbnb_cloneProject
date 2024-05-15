@@ -42,6 +42,7 @@ app.post('/register', async (req,res)=>{
 
 app.post('/login', async (req,res) => {
   const {email,password} = req.body;
+  console.log(req.body);
   const userDoc = await User.findOne({email});
   if (userDoc) {
     const passOk = bcrypt.compareSync(password, userDoc.password);
@@ -52,7 +53,7 @@ app.post('/login', async (req,res) => {
       });
       
     } else {
-     res.status(422).res.json('pass not ok');
+     res.status(422).json('pass not ok');
     }
    
   } else {
