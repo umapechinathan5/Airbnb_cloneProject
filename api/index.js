@@ -16,10 +16,19 @@ app.use(cors({
   credentials:true,
   origin:'http://localhost:5173',
 }));
+const connectDB = async ()=>{
+  try{
+    await mongoose.connect(process.env.MONGO_URL); 
+    console.log("connected to DB");
+  }
+  catch (err){
+    console.error(err);
+    process.exit(1);
+  }
+  
+}
 
-mongoose.connect(process.env.MONGO_URL); 
-
-
+connectDB();
 
 app.get('./test',(req,res)=>{
   res.json('test ok');
@@ -49,7 +58,11 @@ app.post('/login', async (req,res) => {
   if (userDoc) {
     const passOk = bcrypt.compareSync(password, userDoc.password);
     if (passOk) {
-      jwt.sign({email:userDoc.email, id:userDoc._id}, jwtSecret, {}, (err,token) => {
+      jwt.sign({
+        email:userDoc.email, 
+        id:userDoc._id, 
+        name:userDoc.name
+      }, jwtSecret, {}, (err,token) => {
        if (err) throw err;
        res.cookie('token', token).json('pass ok');
       });
@@ -65,7 +78,20 @@ app.post('/login', async (req,res) => {
 
 app.get('/profile', (req,res)=>{
   const {token} = req.cookies;
-  res.json(token);
+  if(token) {
+    jwt.verify(token, jwtSecret, {}, async (err,userData) =>{
+      if (err) throw err;
+      const {name,email,_id} = await User.findById(userData.id);
+      res.json({name,email,_id});
+    })
+  } else {
+    res.json(null);
+  }
+ 
+})
+
+app.post('/logout' , (req,res)=>{
+  res.cookie('token' ,'').json(true);
 })
 
 app.listen(4000,()=>{console.log("Server is running")});
